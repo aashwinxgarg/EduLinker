@@ -1,15 +1,33 @@
 import { Menu, School } from 'lucide-react'
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Button } from './ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import DarkMode from '@/DarkMode';
 import { Sheet, SheetClose, SheetContent, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { Separator } from '@radix-ui/react-dropdown-menu';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useLogoutUserMutation } from '@/features/api/authApi';
+import { toast } from 'sonner';
+import { useSelector } from 'react-redux';
 
 const Navbar = () => {
-    const user = true;
+    const { user } = useSelector(store => store.auth);
+    const [logoutUser, { data, isSuccess }] = useLogoutUserMutation();
+    const navigate = useNavigate();
+    const logoutHandler = async () => {
+        await logoutUser();
+        navigate('/login');
+    }
+
+
+
+    useEffect(() => {
+        if (isSuccess) {
+            toast.success(data.message || "User logged out");
+        }
+    }, [isSuccess])
+
     return (
         <div className='h-16 dark:bg-[#0a0a0a] bg-white border-b dark:border-b-gray-800 border-b-gray-200 fixed top-0 left-0 right-0 duration-300 z-10'>
             {/* Desktop */}
@@ -25,7 +43,7 @@ const Navbar = () => {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Avatar>
-                                        <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                                        <AvatarImage src={user?.photoUrl || "https://github.com/shadcn.png"} alt="@shadcn" />
                                         <AvatarFallback>CN</AvatarFallback>
                                     </Avatar>
                                 </DropdownMenuTrigger>
@@ -34,25 +52,31 @@ const Navbar = () => {
                                     <DropdownMenuSeparator />
                                     <DropdownMenuGroup>
                                         <DropdownMenuItem>
-                                            <span><Link to={'/my-learning'}>My Learning</Link></span>
+                                            <Link to={'/my-learning'}>My Learning</Link>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem>
-                                            <span><Link to={'/profile'}>Edit Profile</Link></span>
+                                            <Link to={'/profile'}>Edit Profile</Link>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem>
+                                        <DropdownMenuItem onClick={logoutHandler}>
                                             <span>Log out</span>
                                         </DropdownMenuItem>
                                     </DropdownMenuGroup>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem>
-                                        <span>Dashboard</span>
-                                    </DropdownMenuItem>
+                                    {
+                                        user.role === "instructor" && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem>
+                                                    <span>Dashboard</span>
+                                                </DropdownMenuItem>
+                                            </>
+                                        )
+                                    }
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         ) : (
                             <div className='flex items-center gap-2'>
-                                <Button variant="outline">Login</Button>
-                                <Button>Signup</Button>
+                                <Button variant="outline" onClick={() => navigate("/login")} >Login</Button>
+                                <Button onClick={() => navigate("/login")} >Signup</Button>
                             </div>
                         )
                     }
@@ -72,7 +96,7 @@ const Navbar = () => {
 export default Navbar
 
 const MobileNavbar = () => {
-    const role="instructor"
+    const role = "instructor"
     return (
         <Sheet>
             <SheetTrigger asChild>
@@ -81,9 +105,9 @@ const MobileNavbar = () => {
             <SheetContent className='flex flex-col'>
                 <SheetHeader className='flex flex-row items-center justify-between mt-2'>
                     <SheetTitle>edulinker</SheetTitle>
-                    <DarkMode/>
+                    <DarkMode />
                 </SheetHeader>
-                <Separator/>
+                <Separator />
                 <nav className='flex flex-col space-y-4'>
                     <span>My Learning</span>
                     <span>Edit Profile</span>
@@ -92,13 +116,13 @@ const MobileNavbar = () => {
                 {
                     role === "instructor" && (
                         <SheetFooter>
-                        <SheetClose asChild>
-                            <Button type="submit">Dashboard</Button>
-                        </SheetClose>
-                    </SheetFooter>
+                            <SheetClose asChild>
+                                <Button type="submit">Dashboard</Button>
+                            </SheetClose>
+                        </SheetFooter>
                     )
                 }
-                
+
             </SheetContent>
         </Sheet>
     )
